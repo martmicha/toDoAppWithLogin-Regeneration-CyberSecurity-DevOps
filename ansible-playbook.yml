@@ -4,7 +4,7 @@
   become: yes
   tasks:
     - name: Install Docker
-      ansible.builtin.package:
+      ansible.builtin.docker:
         name: docker.io
         state: present
 
