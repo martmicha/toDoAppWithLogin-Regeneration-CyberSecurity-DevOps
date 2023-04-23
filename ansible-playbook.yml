@@ -3,7 +3,7 @@
   hosts: azure_vm
   become: yes
   tasks:
-      # Install docker prerequisites   
+    # Install docker prerequisites   
     - name: Install required system packages
       apt:
         pkg:
@@ -43,7 +43,7 @@
         state: latest
 
     - name: Pull Docker images
-      ansible.builtin.docker_image:
+      docker_image:
         name: "{{ item }}"
         source: pull
       with_items:
@@ -51,11 +51,11 @@
         - mysql:5
 
     - name: Create Docker network
-      ansible.builtin.docker_network:
+      docker_network:
         name: app_network
 
     - name: Start MySQL container
-      ansible.builtin.docker_container:
+      docker_container:
         name: mysql_container
         image: mysql:5
         state: started
@@ -74,7 +74,7 @@
         timeout: 120
 
     - name: Start Web Application container
-      ansible.builtin.docker_container:
+      docker_container:
         name: webapp_container
         image: martmich/todoappwithlogin:latest
         state: started
