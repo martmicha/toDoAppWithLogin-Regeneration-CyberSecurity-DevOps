@@ -67,7 +67,7 @@
           - name: app_network
 
     - name: Wait for MySQL to be ready
-      ansible.builtin.wait_for:
+      wait_for:
         host: "{{ ansible_host }}"
         port: 3306
         delay: 10
