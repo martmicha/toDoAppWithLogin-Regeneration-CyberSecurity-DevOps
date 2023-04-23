@@ -2,6 +2,12 @@
 - name: Deploy application on Azure VM
   hosts: azure_vm
   become: yes
+  vars:
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+  tasks:
+- name: Deploy application on Azure VM
+  hosts: azure_vm
+  become: yes
   tasks:
     # Install docker prerequisites   
     - name: Install required system packages
