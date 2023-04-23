@@ -1,21 +1,20 @@
 ---
 - name: Deploy application on Azure VM
   hosts: azure_vm
-  become: yes
+  sudo: true
   tasks:
     - name: Install Docker
-      ansible.builtin.package:
+      apt:
         name: docker.io
         state: present
 
     - name: Start Docker service
-      ansible.builtin.service:
+      service:
         name: docker
         state: started
-        enabled: yes
 
     - name: Pull Docker images
-      ansible.builtin.docker_image:
+      docker_image:
         name: "{{ item }}"
         source: pull
       with_items:
@@ -23,11 +22,11 @@
         - mysql:5
 
     - name: Create Docker network
-      ansible.builtin.docker_network:
+      docker_network:
         name: app_network
 
     - name: Start MySQL container
-      ansible.builtin.docker_container:
+      docker_container:
         name: mysql_container
         image: mysql:5
         state: started
@@ -39,14 +38,14 @@
           - name: app_network
 
     - name: Wait for MySQL to be ready
-      ansible.builtin.wait_for:
+      wait_for:
         host: "{{ ansible_host }}"
         port: 3306
         delay: 10
         timeout: 120
 
     - name: Start Web Application container
-      ansible.builtin.docker_container:
+      docker_container:
         name: webapp_container
         image: martmich/todoappwithlogin:latest
         state: started
@@ -54,8 +53,8 @@
         env:
           DB_HOST: mysql_container
           DB_PORT: 3306
-          DB_USER: "{{ db_user }}"
-          DB_USER_PASSWORD: "{{ db_user_password }}"
+          DB_USER: root
+          DB_USER_PASSWORD: root
         ports:
           - "8080:8080"
         networks:
