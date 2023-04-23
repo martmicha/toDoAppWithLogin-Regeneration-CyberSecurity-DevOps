@@ -3,16 +3,44 @@
   hosts: azure_vm
   become: yes
   tasks:
-    - name: Install Docker
-      ansible.builtin.docker:
-        name: docker.io
+      # Install docker prerequisites   
+    - name: Install required system packages
+      apt:
+        pkg:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - python3-pip
+          - virtualenv
+          - python3-setuptools
+        state: latest
+        update_cache: true
+
+    # Install docker keys to suppress the warning and error messages
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+    
+    # Add the repository to use when downloading Docker binaries
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu focal stable
         state: present
 
-    - name: Start Docker service
-      ansible.builtin.service:
+    # Update cache and install Docker
+    - name: Update apt and install docker-ce
+      apt:
+        name: docker-ce
+        state: latest
+        update_cache: true
+
+    # Final step for Docker, install the module for Python
+    - name: Install Docker Module for Python
+      pip:
         name: docker
-        state: started
-        enabled: yes
+        state: latest
 
     - name: Pull Docker images
       ansible.builtin.docker_image:
