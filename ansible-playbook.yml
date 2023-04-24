@@ -48,6 +48,12 @@
         state: latest
         update_cache: true
 
+    - name: Install requests library for Python
+      pip:
+        name: requests
+        state: latest
+
+
     # install Docker-py 
     - name: Install Python docker
       pip:
