@@ -28,9 +28,13 @@
         state: present
 
     - name: Add Docker GPG key
-      apt_key:
-        url: "https://download.docker.com/linux/ubuntu/gpg"
-        state: present
+      shell: |
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/trusted.gpg.d/docker.gpg
+      args:
+        warn: no
+      register: add_docker_gpg_key_result
+      changed_when: "'OK' in add_docker_gpg_key_result.stdout"
+      tags: docker
 
     - name: Add Docker repository
       apt_repository:
