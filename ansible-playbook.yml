@@ -48,6 +48,12 @@
         state: latest
         update_cache: true
 
+    # install Docker-py 
+    - name: Install Python docker
+      pip:
+        name: docker-py
+        state: present
+
     # Final step for Docker, install the module for Python
     - name: Install Docker Module for Python
       pip:
@@ -100,3 +106,5 @@
           - "8080:8080"
         networks:
           - name: app_network
+
+
