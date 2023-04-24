@@ -1,95 +1,100 @@
 ---
-- hosts: all
-  become: true
+- name: Deploy application on Azure VM
+  hosts: azure_vm
+  become: yes
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
   tasks:
+  
+- name: Deploy application on Azure VM
+  hosts: azure_vm
+  become: yes
+  tasks:
+    # Install docker prerequisites   
     - name: Update package index files
       apt:
         update_cache: yes
         cache_valid_time: 3600
 
+    - name: Install required packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+
+    - name: Add Docker GPG key
+      apt_key:
+        url: "https://download.docker.com/linux/ubuntu/gpg"
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/docker.gpg] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Update package index files
+      apt:
+        update_cache: yes
 
     - name: Install Docker
       apt:
-        name: docker.io
+        name: docker-ce
         state: present
-      tags:
-        - docker
 
-    - name: Fix broken dependencies
-      apt:
-        name: "{{ item }}"
-        state: latest
-        force: yes
-      loop:
-        - containerd
-        - docker.io
+    - name: Start and enable Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
 
-    - name: Install Python docker
-      pip:
-        name: docker-py
-        state: present
-    - name: Download Docker images
+    - name: Pull Docker images
       docker_image:
         name: "{{ item }}"
-        state: present
       with_items:
+        - martmich/todoappwithlogin:latest
         - mysql:5
-        - martmich/todoappwithlogin
-      tags:
-        - docker
+
+
     - name: Create Docker network
       docker_network:
-        name: myapp_network
-        state: present
-      tags:
-        - docker
+        name: app_network
+
     - name: Start MySQL container
       docker_container:
-        name: mysql
+        name: mysql_container
         image: mysql:5
-        published_ports:
-          - "3306:3306"
+        state: started
+        restart_policy: always
         env:
           MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: todos
         networks:
-          - name: myapp_network
-            #ipv4_address: 172.20.0.2
-        state: started
-      register: mysql_container
-      tags:
-        - docker
-    - name: Wait for MySQL
+          - name: app_network
+
+    - name: Wait for MySQL to be ready
       wait_for:
-        host: "localhost"
-        port: "3306"
-        state: started      
-    - name: Start web application container
+        host: "{{ ansible_host }}"
+        port: 3306
+        delay: 10
+        timeout: 120
+
+    - name: Start Web Application container
       docker_container:
-        name: myapp
-        image: martmich/todoappwithlogin
-        published_ports:
-          - "8080:8080"
+        name: webapp_container
+        image: martmich/todoappwithlogin:latest
+        state: started
+        restart_policy: always
         env:
-          DB_HOST: mysql
+          DB_HOST: mysql_container
           DB_PORT: 3306
           DB_USER: "{{ db_user }}"
           DB_USER_PASSWORD: "{{ db_user_password }}"
+        ports:
+          - "8080:8080"
         networks:
-          - name: myapp_network
-            #ipv4_address: 172.20.0.3
-        state: started
-        #when: mysql_status_succeeded
-        #restart_policy: always
-        #depends_on:
-        #  - mysql
-      tags:
-        - docker
-#   - name: Connect Docker containers to network
-#      docker_network:
-#        name: myapp_network
-#        #state: connected
-#        containers:
-#          - mysql
-#          - myapp
-#      tags:
-#        - docker
+          - name: app_network
