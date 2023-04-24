@@ -11,20 +11,6 @@
         update_cache: yes
         cache_valid_time: 3600
 
-      - name: Find existing docker GPG key
-        find:
-          paths: /etc/apt/trusted.gpg.d
-          patterns: 'docker*.gpg'
-        register: existing_docker_gpg_keys
-
-      - name: Remove existing docker GPG key
-        file:
-          path: "{{ item.path }}"
-          state: absent
-        with_items: "{{ existing_docker_gpg_keys.files }}"
-
-
-
     - name: Install required packages
       apt:
         name:
