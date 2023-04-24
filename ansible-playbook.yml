@@ -10,10 +10,19 @@
       apt:
         update_cache: yes
         cache_valid_time: 3600
-    - name: Remove conflicting configurations
-      shell: |
-        rm -f /etc/apt/trusted.gpg.d/docker.gpg
-        rm -f /etc/apt/sources.list.d/docker.list
+
+      - name: Find existing docker GPG key
+        find:
+          paths: /etc/apt/trusted.gpg.d
+          patterns: 'docker*.gpg'
+        register: existing_docker_gpg_keys
+
+      - name: Remove existing docker GPG key
+        file:
+          path: "{{ item.path }}"
+          state: absent
+        with_items: "{{ existing_docker_gpg_keys.files }}"
+
 
 
     - name: Install required packages
