@@ -1,110 +1,81 @@
 ---
-- name: Deploy application on Azure VM
-  hosts: azure_vm
-  become: yes
-  vars:
-    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+- hosts: all
+  become: true
   tasks:
-- name: Deploy application on Azure VM
-  hosts: azure_vm
-  become: yes
-  tasks:
-    # Install docker prerequisites   
-    - name: Install required system packages
+    - name: Install Docker
       apt:
-        pkg:
-          - apt-transport-https
-          - ca-certificates
-          - curl
-          - software-properties-common
-          - python3-pip
-          - virtualenv
-          - python3-setuptools
-        state: latest
-        update_cache: true
-
-    - name: Create pip symlink
-      command: ln -s /usr/bin/pip3 /usr/bin/pip
-      args:
-        creates: /usr/bin/pip
-      become: yes
-
-    # Install docker keys to suppress the warning and error messages
-    - name: Add Docker GPG apt Key
-      apt_key:
-        url: https://download.docker.com/linux/ubuntu/gpg
+        name: docker.io
         state: present
-    
-    # Add the repository to use when downloading Docker binaries
-    - name: Add Docker Repository
-      apt_repository:
-        repo: deb https://download.docker.com/linux/ubuntu focal stable
-        state: present
-
-    # Update cache and install Docker
-    - name: Update apt and install docker-ce
-      apt:
-        name: docker-ce
-        state: latest
-        update_cache: true
-
-    # install Docker-py 
+      tags:
+        - docker
     - name: Install Python docker
       pip:
         name: docker-py
         state: present
-
-    # Final step for Docker, install the module for Python
-    - name: Install Docker Module for Python
-      pip:
-        name: docker
-        state: latest
-
-    - name: Pull Docker images
+    - name: Download Docker images
       docker_image:
         name: "{{ item }}"
+        state: present
       with_items:
-        - martmich/todoappwithlogin:latest
         - mysql:5
-
-
+        - marios100/project
+      tags:
+        - docker
     - name: Create Docker network
       docker_network:
-        name: app_network
-
+        name: myapp_network
+        state: present
+      tags:
+        - docker
     - name: Start MySQL container
       docker_container:
-        name: mysql_container
+        name: mysql
         image: mysql:5
-        state: started
-        restart_policy: always
+        published_ports:
+          - "3306:3306"
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: todos
         networks:
-          - name: app_network
-
-    - name: Wait for MySQL to be ready
-      wait_for:
-        host: "{{ ansible_host }}"
-        port: 3306
-        delay: 10
-        timeout: 120
-
-    - name: Start Web Application container
-      docker_container:
-        name: webapp_container
-        image: martmich/todoappwithlogin:latest
+          - name: myapp_network
+            #ipv4_address: 172.20.0.2
         state: started
-        restart_policy: always
+      register: mysql_container
+      tags:
+        - docker
+    - name: Wait for MySQL
+      wait_for:
+        host: "localhost"
+        port: "3306"
+        state: started      
+    - name: Start web application container
+      docker_container:
+        name: myapp
+        image: martmich/todoappwithlogin:latest
+        published_ports:
+          - "8080:8080"
         env:
-          DB_HOST: mysql_container
+          DB_HOST: mysql
           DB_PORT: 3306
           DB_USER: "{{ db_user }}"
           DB_USER_PASSWORD: "{{ db_user_password }}"
-        ports:
-          - "8080:8080"
         networks:
-          - name: app_network
+          - name: myapp_network
+            #ipv4_address: 172.20.0.3
+        state: started
+        #when: mysql_status_succeeded
+        #restart_policy: always
+        #depends_on:
+        #  - mysql
+      tags:
+        - docker
+#   - name: Connect Docker containers to network
+#      docker_network:
+#        name: myapp_network
+#        #state: connected
+#        containers:
+#          - mysql
+#          - myapp
+#      tags:
+#        - docker
 
 
