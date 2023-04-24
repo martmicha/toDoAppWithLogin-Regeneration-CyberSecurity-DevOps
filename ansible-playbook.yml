@@ -6,61 +6,23 @@
     ansible_python_interpreter: /usr/bin/python3
     ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
   tasks:
-  
+
 - name: Deploy application on Azure VM
   hosts: azure_vm
   become: yes
+  
   tasks:
-    # Install docker prerequisites   
-    - name: Install required system packages
+   tasks:
+    - name: Install Docker
       apt:
-        pkg:
-          - apt-transport-https
-          - ca-certificates
-          - curl
-          - software-properties-common
-          - python3-pip
-          - virtualenv
-          - python3-setuptools
-        state: latest
-        update_cache: true
-
-    - name: Create pip symlink
-      command: ln -s /usr/bin/pip3 /usr/bin/pip
-      args:
-        creates: /usr/bin/pip
-      become: yes
-
-    # Install docker keys to suppress the warning and error messages
-    - name: Add Docker GPG apt Key
-      apt_key:
-        url: https://download.docker.com/linux/ubuntu/gpg
+        name: docker.io
         state: present
-    
-    # Add the repository to use when downloading Docker binaries
-    - name: Add Docker Repository
-      apt_repository:
-        repo: deb https://download.docker.com/linux/ubuntu focal stable
-        state: present
-
-    # Update cache and install Docker
-    - name: Update apt and install docker-ce
-      apt:
-        name: docker-ce
-        state: latest
-        update_cache: true
-
-    - name: Install requests library for Python
-      pip:
-        name: requests
-        state: latest
-
-
-    # install Docker-py 
+      tags:
+        - docker
     - name: Install Python docker
       pip:
         name: docker-py
-        state: latest
+        state: present
 
 
     - name: Pull Docker images
