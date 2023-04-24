@@ -20,7 +20,6 @@
           - python3-pip
           - virtualenv
           - python3-setuptools
-          - python-is-python3
         state: latest
         update_cache: true
 
