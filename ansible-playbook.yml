@@ -18,7 +18,7 @@
         state: present
       with_items:
         - mysql:5
-        - marios100/project
+        - martmich/todoappwithlogin
       tags:
         - docker
     - name: Create Docker network
@@ -50,7 +50,7 @@
     - name: Start web application container
       docker_container:
         name: myapp
-        image: martmich/todoappwithlogin:latest
+        image: martmich/todoappwithlogin
         published_ports:
           - "8080:8080"
         env:
