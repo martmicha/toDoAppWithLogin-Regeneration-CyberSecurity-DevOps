@@ -52,13 +52,8 @@
     - name: Install Python docker
       pip:
         name: docker-py
-        state: present
-
-    # Final step for Docker, install the module for Python
-    - name: Install Docker Module for Python
-      pip:
-        name: docker
         state: latest
+
 
     - name: Pull Docker images
       docker_image:
